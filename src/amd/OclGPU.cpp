@@ -58,7 +58,8 @@ static inline void port_sleep(size_t sec)
 #include "log/Log.h"
 #include "Options.h"
 #include "xmrig.h"
-
+#include "net/Job.h"
+#include "net/Protocol.h"
 
 constexpr const char *kSetKernelArgErr = "Error %s when calling clSetKernelArg for kernel %d, argument %d.";
 
@@ -233,7 +234,7 @@ size_t InitOpenCLGpu(int index, cl_context opencl_ctx, GpuContext* ctx, const ch
 {
     size_t MaximumWorkSize;
     cl_int ret;
-
+    
     if ((ret = clGetDeviceInfo(ctx->DeviceID, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &MaximumWorkSize, NULL)) != CL_SUCCESS) {
         LOG_ERR("Error %s when querying a device's max worksize using clGetDeviceInfo.", err_to_str(ret));
         return OCL_ERR_API;
@@ -259,7 +260,7 @@ size_t InitOpenCLGpu(int index, cl_context opencl_ctx, GpuContext* ctx, const ch
         return OCL_ERR_API;
     }
 
-    ctx->InputBuffer = clCreateBuffer(opencl_ctx, CL_MEM_READ_ONLY, 88, NULL, &ret);
+    ctx->InputBuffer = clCreateBuffer(opencl_ctx, CL_MEM_READ_ONLY, LEN::BLOB, NULL, &ret);
     if (ret != CL_SUCCESS) {
         LOG_ERR("Error %s when calling clCreateBuffer to create input buffer.", err_to_str(ret));
         return OCL_ERR_API;
@@ -324,7 +325,7 @@ size_t InitOpenCLGpu(int index, cl_context opencl_ctx, GpuContext* ctx, const ch
         return OCL_ERR_API;
     }
 
-    char options[512];
+     char options[512];
     snprintf(options, sizeof(options), "-DITERATIONS=%u -DMASK=%u -DWORKSIZE=%zu -DSTRIDED_INDEX=%d -DMEM_CHUNK_EXPONENT=%d -DCOMP_MODE=%d -DMEMORY=%zu -DALGO=%d",
              hashIterations, threadMemMask, ctx->workSize, ctx->stridedIndex, static_cast<int>(1u << ctx->memChunk),
              ctx->compMode, hashMemSize, static_cast<int>(algo)
@@ -630,24 +631,21 @@ size_t InitOpenCL(GpuContext* ctx, size_t num_gpus, size_t platform_idx)
     return OCL_ERR_SUCCESS;
 }
 
-size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t target, xmrig::Algo algorithm, uint32_t variant)
+size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t target, xmrig::Algo algorithm, uint32_t variant, uint32_t moneroNonce)
 {
     cl_int ret;
 
-    if (input_len > 84) {
+    if (input_len > LEN::BLOB) {
         return OCL_ERR_BAD_PARAMS;
     }
-
-    input[input_len] = 0x01;
-    memset(input + input_len + 1, 0, 88 - input_len - 1);
     
     size_t numThreads = ctx->rawIntensity;
 
-    if ((ret = clEnqueueWriteBuffer(ctx->CommandQueues, ctx->InputBuffer, CL_TRUE, 0, 88, input, 0, NULL, NULL)) != CL_SUCCESS) {
+    if ((ret = clEnqueueWriteBuffer(ctx->CommandQueues, ctx->InputBuffer, CL_TRUE, 0, LEN::BLOB, input, 0, NULL, NULL)) != CL_SUCCESS) {
         LOG_ERR("Error %s when calling clEnqueueWriteBuffer to fill input buffer.", err_to_str(ret));
         return OCL_ERR_API;
     }
-
+    
     if ((ret = clSetKernelArg(ctx->Kernels[0], 0, sizeof(cl_mem), &ctx->InputBuffer)) != CL_SUCCESS) {
         LOG_ERR(kSetKernelArgErr, err_to_str(ret), 0, 0);
         return OCL_ERR_API;
@@ -683,6 +681,11 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
 
     if (cn_kernel_offset) {
         if ((ret = clSetKernelArg(ctx->Kernels[1 + cn_kernel_offset], 3, sizeof(cl_mem), &ctx->InputBuffer)) != CL_SUCCESS) {
+            LOG_ERR(kSetKernelArgErr, err_to_str(ret), 1 + cn_kernel_offset, 3);
+            return OCL_ERR_API;
+        }
+
+        if ((ret = clSetKernelArg(ctx->Kernels[1 + cn_kernel_offset], 4, sizeof(cl_mem), &moneroNonce)) != CL_SUCCESS) {
             LOG_ERR(kSetKernelArgErr, err_to_str(ret), 1 + cn_kernel_offset, 3);
             return OCL_ERR_API;
         }
@@ -777,6 +780,7 @@ size_t XMRRunJob(GpuContext* ctx, cl_uint* HashOutput, xmrig::Algo algorithm, ui
     }*/
 
     size_t tmpNonce = ctx->Nonce;
+
     int cn_kernel_offset = 0;
     if (algorithm != xmrig::CRYPTONIGHT_HEAVY && variant > 0) {
         cn_kernel_offset = 6;
@@ -830,6 +834,9 @@ size_t XMRRunJob(GpuContext* ctx, cl_uint* HashOutput, xmrig::Algo algorithm, ui
 
             // round up to next multiple of w_size
             BranchNonces[i] = ((BranchNonces[i] + w_size - 1u) / w_size) * w_size;
+
+            // LOG_INFO("BRANCH NONCE : %" PRIu64, BranchNonces[i]);
+
             // number of global threads must be a multiple of the work group size (w_size)
             assert(BranchNonces[i]%w_size == 0);
             size_t tmpNonce = ctx->Nonce;

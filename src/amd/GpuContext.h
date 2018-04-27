@@ -97,7 +97,7 @@ struct GpuContext
     int computeUnits;
     std::string name;
 
-    uint32_t Nonce;
+    uint64_t Nonce;
 };
 
 

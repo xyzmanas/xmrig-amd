@@ -32,6 +32,7 @@
 
 #include "amd/GpuContext.h"
 #include "xmrig.h"
+#include "net/Protocol.h"
 
 
 #define OCL_ERR_SUCCESS    (0)
@@ -45,7 +46,7 @@ int getAMDPlatformIdx();
 std::vector<GpuContext> getAMDDevices(int index);
 
 size_t InitOpenCL(GpuContext* ctx, size_t num_gpus, size_t platform_idx);
-size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t target, xmrig::Algo algorithm, uint32_t variant);
+size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t target, xmrig::Algo algorithm, uint32_t variant, uint32_t moneroNonce);
 size_t XMRRunJob(GpuContext* ctx, cl_uint* HashOutput, xmrig::Algo algorithm, uint32_t variant);
 
 #endif /* __OCLGPU_H__ */

@@ -14,7 +14,7 @@
 */
 
 #include "c_jh.h"
-
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 

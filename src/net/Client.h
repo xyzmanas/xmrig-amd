@@ -35,6 +35,7 @@
 #include "net/SubmitResult.h"
 #include "net/Url.h"
 #include "rapidjson/fwd.h"
+#include "net/Protocol.h"
 
 
 class IClientListener;
@@ -74,7 +75,7 @@ public:
     inline uint16_t port() const             { return m_url.port(); }
     inline void setQuiet(bool quiet)         { m_quiet = quiet; }
     inline void setRetryPause(int ms)        { m_retryPause = ms; }
-
+    bool test = false;
 private:
     ~Client();
 
@@ -96,6 +97,8 @@ private:
     void reconnect();
     void setState(SocketState state);
     void startTimeout();
+    void sendSubscribe();
+    void sendAuthorize();
 
     static void onAllocBuffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf);
     static void onClose(uv_handle_t *handle);
