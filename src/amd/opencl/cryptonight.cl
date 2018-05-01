@@ -1,5 +1,7 @@
 R"===(
-/*
+/* Team-Hycon
+  * Copyright 2018      Team-Hycon  <https://github.com/Team-Hycon>
+  * 
   * This program is free software: you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
   * the Free Software Foundation, either version 3 of the License, or
@@ -437,7 +439,7 @@ inline ulong getIdx()
 #define mix_and_propagate(xin) (xin)[(get_local_id(1)) % 8][get_local_id(0)] ^ (xin)[(get_local_id(1) + 1) % 8][get_local_id(0)]
 
 __attribute__((reqd_work_group_size(WORKSIZE, 8, 1)))
-__kernel void cn0(__global ulong *input, __global uint4 *Scratchpad, __global ulong *states, ulong Threads)
+__kernel void cn0(__global ulong *input, __global uint4 *Scratchpad, __global ulong *states, ulong Threads, ulong startNonce)
 {
     ulong State[25];
     uint ExpandedKey1[40];
@@ -477,11 +479,9 @@ __kernel void cn0(__global ulong *input, __global uint4 *Scratchpad, __global ul
         ((ulong8 *)State)[0] = vload8(0, input);
         State[8] = input[8];
         State[9] = input[9];
-        // printf("1 STATE : %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx\n", State[0], State[1], State[2], State[3], State[4], State[5], State[6], State[7], State[8], State[9], State[10]);
         State[10] = input[10];
-        // printf("2 STATE : %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx\n", State[0], State[1], State[2], State[3], State[4], State[5], State[6], State[7], State[8], State[9], State[10]);
-        ((uint *)State)[16] = ((get_global_id(0)) & 0x00000000ffffffffU);
-        ((uint *)State)[17] = ((get_global_id(0)) & 0xffffffff00000000U) >> 32;
+        ((uint *)State)[16] = ((startNonce + get_global_id(0)) & 0x00000000ffffffffU);
+        ((uint *)State)[17] = ((startNonce + get_global_id(0)) & 0xffffffff00000000U) >> 32;
         
         for(int i = 9; i < 25; ++i) State[i] = 0x0000000000000000UL;
         // State[8] = 0x01;
@@ -489,9 +489,6 @@ __kernel void cn0(__global ulong *input, __global uint4 *Scratchpad, __global ul
 
         // Last bit of padding
         State[16] = 0x8000000000000000UL;
-
-        // if(get_global_id(0) == 0 )
-        //     printf("[%d] STATE : %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx\n", get_global_id(0), State[0], State[1], State[2], State[3], State[4], State[5], State[6], State[7], State[8], State[9], State[10], State[11], State[12], State[13], State[14], State[15], State[16]);
         
         keccakf1600_2(State);
     }
@@ -744,7 +741,7 @@ __kernel void cn1(__global uint4 *Scratchpad, __global ulong *states, ulong Thre
 }
 
 __attribute__((reqd_work_group_size(WORKSIZE, 8, 1)))
-__kernel void cn2(__global uint4 *Scratchpad, __global ulong *states, __global uint *Branch0, __global uint *Branch1, __global uint *Branch2, __global uint *Branch3, ulong Threads)
+__kernel void cn2(__global uint4 *Scratchpad, __global ulong *states, __global ulong *Branch0, __global ulong *Branch1, __global ulong *Branch2, __global ulong *Branch3, ulong Threads)
 {
     __local uint AES0[256], AES1[256], AES2[256], AES3[256];
     uint ExpandedKey2[40];
@@ -877,7 +874,6 @@ __kernel void cn2(__global uint4 *Scratchpad, __global ulong *states, __global u
     }
 
     barrier(CLK_GLOBAL_MEM_FENCE);
-
 #   if (COMP_MODE == 1)
     // do not use early return here
     if(gIdx < Threads)
@@ -892,9 +888,9 @@ __kernel void cn2(__global uint4 *Scratchpad, __global ulong *states, __global u
             for(int i = 0; i < 25; ++i) states[i] = State[i];
 
            ulong StateSwitch = State[0] & 3;
-            __global uint *destinationBranch1 = StateSwitch == 0 ? Branch0 : Branch1;
-            __global uint *destinationBranch2 = StateSwitch == 2 ? Branch2 : Branch3;
-            __global uint *destinationBranch = StateSwitch < 2 ? destinationBranch1 : destinationBranch2;
+            __global ulong *destinationBranch1 = StateSwitch == 0 ? Branch0 : Branch1;
+            __global ulong *destinationBranch2 = StateSwitch == 2 ? Branch2 : Branch3;
+            __global ulong *destinationBranch = StateSwitch < 2 ? destinationBranch1 : destinationBranch2;
             destinationBranch[atomic_inc(destinationBranch + Threads)] = gIdx;
             }
         }
@@ -910,7 +906,7 @@ R"===(
 
 #define VSWAP4(x)   ((((x) >> 24) & 0xFFU) | (((x) >> 8) & 0xFF00U) | (((x) << 8) & 0xFF0000U) | (((x) << 24) & 0xFF000000U))
 
-__kernel void Skein(__global ulong *states, __global uint *BranchBuf, __global uint *output, ulong Target, ulong Threads)
+__kernel void Skein(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
 {
     const ulong idx = get_global_id(0) - get_global_offset(0);
 
@@ -960,14 +956,12 @@ __kernel void Skein(__global ulong *states, __global uint *BranchBuf, __global u
         // and expect an accurate result for target > 32-bit without implementing carries
         uint diffValue = (( p.s0 & 0x00000000000000ff) << 8) + ((p.s0 & 0x000000000000ff00) >> 8);
         
-        // if( (BranchBuf[idx] + get_global_offset(0)) == 0 )
-        // {
         // if(diffValue <= Target)
         // {
 
         //     ulong outIdx = atomic_inc(output + 0xFF);
         //     if(outIdx < 0xFF) {
-        //         output[outIdx] = BranchBuf[idx] + get_global_offset(0);
+        //         output[outIdx] = startNonce + BranchBuf[idx] + get_global_offset(0);
         //         printf("SKEIN [%d %d %d] : %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx\n", output[outIdx], BranchBuf[idx], get_global_offset(0), p.s0, p.s1, p.s2, p.s3, p.s4, p.s5, p.s6, p.s7);
         //     }
         // }
@@ -998,7 +992,7 @@ __kernel void Skein(__global ulong *states, __global uint *BranchBuf, __global u
     h7h ^= input[6]; \
     h7l ^= input[7]
 
-__kernel void JH(__global ulong *states, __global uint *BranchBuf, __global uint *output, ulong Target, ulong Threads)
+__kernel void JH(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
 {
     const uint idx = get_global_id(0) - get_global_offset(0);
 
@@ -1007,7 +1001,6 @@ __kernel void JH(__global ulong *states, __global uint *BranchBuf, __global uint
     {
         states += 25 * BranchBuf[idx];
         
-        // if(BranchBuf[idx] + get_global_offset(0) == 66) printf("JH 1 : %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx\n", states[0], states[1], states[2], states[3], states[4], states[5], states[6], states[7], states[8], states[9], states[10], states[11], states[12], states[13], states[14], states[15]);
         sph_u64 h0h = 0xEBD3202C41A398EBUL, h0l = 0xC145B29C7BBECD92UL, h1h = 0xFAC7D4609151931CUL, h1l = 0x038A507ED6820026UL, h2h = 0x45B92677269E23A4UL, h2l = 0x77941AD4481AFBE0UL, h3h = 0x7A176B0226ABB5CDUL, h3l = 0xA82FFF0F4224F056UL;
         sph_u64 h4h = 0x754D2E7F8996A371UL, h4l = 0x62E27DF70849141DUL, h5h = 0x948F2476F7957627UL, h5l = 0x6C29804757B6D587UL, h6h = 0x6C0D8EAC2D275E5CUL, h6l = 0x0F7A0557C6508451UL, h7h = 0xEA12247067D3E47BUL, h7l = 0x69D71CD313ABE389UL;
         sph_u64 tmp;
@@ -1048,8 +1041,7 @@ __kernel void JH(__global ulong *states, __global uint *BranchBuf, __global uint
         {
             ulong outIdx = atomic_inc(output + 0xFF);
             if(outIdx < 0xFF) {
-                output[outIdx] = BranchBuf[idx] + get_global_offset(0);
-                printf("JH [%d %d %d] : %016llx %016llx %016llx %016llx\n", output[outIdx], BranchBuf[idx], get_global_offset(0), h6h, h6l, h7h, h7l);
+                output[outIdx] = startNonce + BranchBuf[idx] + get_global_offset(0);
             }
         }
     }
@@ -1057,7 +1049,7 @@ __kernel void JH(__global ulong *states, __global uint *BranchBuf, __global uint
 
 #define SWAP4(x)    as_uint(as_uchar4(x).s3210)
 
-__kernel void Blake(__global ulong *states, __global uint *BranchBuf, __global uint *output, ulong Target, ulong Threads)
+__kernel void Blake(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
 {
     const uint idx = get_global_id(0) - get_global_offset(0);
 
@@ -1130,14 +1122,13 @@ __kernel void Blake(__global ulong *states, __global uint *BranchBuf, __global u
         {
             ulong outIdx = atomic_inc(output + 0xFF);
             if(outIdx < 0xFF) {
-                output[outIdx] = BranchBuf[idx] + get_global_offset(0);
-                printf("Blake [%d %d %d] : %016llx %016llx %016llx %016llx\n", output[outIdx], BranchBuf[idx], get_global_offset(0), as_ulong((uint2)(h[0], h[1])), as_ulong((uint2)(h[2], h[3])), as_ulong((uint2)(h[4], h[5])), as_ulong((uint2)(h[6], h[7])));
+                output[outIdx] = startNonce + BranchBuf[idx] + get_global_offset(0);
             }
         }
     }
 }
 
-__kernel void Groestl(__global ulong *states, __global uint *BranchBuf, __global uint *output, ulong Target, ulong Threads)
+__kernel void Groestl(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
 {
     const uint idx = get_global_id(0) - get_global_offset(0);
 
@@ -1196,8 +1187,7 @@ __kernel void Groestl(__global ulong *states, __global uint *BranchBuf, __global
             ulong outIdx = atomic_inc(output + 0xFF);
             if(outIdx < 0xFF) {
 
-                output[outIdx] = BranchBuf[idx] + get_global_offset(0);
-                printf("Groestl [%d %d %d] %016llx %016llx %016llx %016llx\n", output[outIdx], BranchBuf[idx], get_global_offset(0), State[4], State[5], State[6], State[7]);
+                output[outIdx] = startNonce + BranchBuf[idx] + get_global_offset(0);
             }
         }
     }

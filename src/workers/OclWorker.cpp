@@ -7,6 +7,7 @@
  * Copyright 2017-2018 XMR-Stak    <https://github.com/fireice-uk>, <https://github.com/psychocrypt>
  * Copyright 2018      Lee Clagett <https://github.com/vtnerd>
  * Copyright 2016-2018 XMRig       <https://github.com/xmrig>, <support@xmrig.com>
+ * Copyright 2018      Team-Hycon  <https://github.com/Team-Hycon>
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -56,7 +57,7 @@ OclWorker::OclWorker(Handle *handle) :
 
 void OclWorker::start()
 {
-    cl_uint results[0x100];
+    cl_ulong results[0x100];
 
     while (Workers::sequence() > 0) {
         if (Workers::isPaused()) {
@@ -73,9 +74,9 @@ void OclWorker::start()
         }
 
         while (!Workers::isOutdated(m_sequence)) {
-            memset(results, 0, sizeof(cl_uint) * (0x100));
+            memset(results, 0, sizeof(cl_ulong) * (0x100));
 
-            XMRRunJob(m_ctx, results, m_algorithm, m_job.variant());
+            XMRRunJob(m_ctx, results, m_algorithm, m_job.variant(), &m_startNonce);
 
             for (size_t i = 0; i < results[0xFF]; i++) {
                 *m_job.nonce() = results[i];
@@ -124,10 +125,11 @@ void OclWorker::consumeJob()
     m_job.setThreadId(m_id);
 
     if (m_job.isNicehash()) {
-        m_nonce = (*m_job.nonce() & 0xff000000U) + (0xffffffU / m_threads * m_id);
+        m_nonce = (*m_job.nonce() & 0xff000000U) + (0xffffffffffffffU / m_threads * m_id);
     }
     else {
-        m_nonce = 0xffffffffU / m_threads * m_id;
+        m_startNonce = m_job.jobId() + (m_job.jobUnit() / m_threads * m_id);
+        m_nonce = 0;
     }
 
     m_ctx->Nonce = m_nonce;
@@ -149,7 +151,7 @@ void OclWorker::setJob()
 {
     memcpy(m_blob, m_job.blob(), sizeof(m_blob));
 
-    XMRSetJob(m_ctx, m_blob, m_job.size(), m_job.target(), m_algorithm, m_job.variant(), *(m_job.moneroNonce()));
+    XMRSetJob(m_ctx, m_blob, m_job.size(), m_job.target(), m_algorithm, m_job.variant(), *(m_job.moneroNonce()), &m_startNonce);
 }
 
 

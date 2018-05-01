@@ -7,6 +7,7 @@
  * Copyright 2017-2018 XMR-Stak    <https://github.com/fireice-uk>, <https://github.com/psychocrypt>
  * Copyright 2018      Lee Clagett <https://github.com/vtnerd>
  * Copyright 2016-2018 XMRig       <https://github.com/xmrig>, <support@xmrig.com>
+ * Copyright 2018      Team-Hycon  <https://github.com/Team-Hycon>
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -33,6 +34,7 @@
 #include "amd/GpuContext.h"
 #include "xmrig.h"
 #include "net/Protocol.h"
+#include "net/Job.h"
 
 
 #define OCL_ERR_SUCCESS    (0)
@@ -46,7 +48,7 @@ int getAMDPlatformIdx();
 std::vector<GpuContext> getAMDDevices(int index);
 
 size_t InitOpenCL(GpuContext* ctx, size_t num_gpus, size_t platform_idx);
-size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t target, xmrig::Algo algorithm, uint32_t variant, uint32_t moneroNonce);
-size_t XMRRunJob(GpuContext* ctx, cl_uint* HashOutput, xmrig::Algo algorithm, uint32_t variant);
+size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t target, xmrig::Algo algorithm, uint32_t variant, uint32_t moneroNonce, uint64_t* startNonce);
+size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, uint32_t variant, uint64_t* startNonce);
 
 #endif /* __OCLGPU_H__ */

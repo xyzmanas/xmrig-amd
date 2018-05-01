@@ -7,6 +7,7 @@
  * Copyright 2017-2018 XMR-Stak    <https://github.com/fireice-uk>, <https://github.com/psychocrypt>
  * Copyright 2018      Lee Clagett <https://github.com/vtnerd>
  * Copyright 2016-2018 XMRig       <https://github.com/xmrig>, <support@xmrig.com>
+ * Copyright 2018      Team-Hycon  <https://github.com/Team-Hycon>
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -45,18 +46,6 @@ bool CryptoNight::hash(const Job &job, JobResult &result, cryptonight_ctx *ctx)
 {
     fn(job.variant())(job.blob(), job.size(), result.result, ctx);
     uint32_t diffResult = (result.result[0] << 8) + (result.result[1] );
-    char strResult[LEN::RESULT_HEX + 1];
-    memset(strResult, 0, LEN::RESULT_HEX + 1);
-    Job::toHex(reinterpret_cast<const unsigned char*>(&result.result), LEN::RESULT, strResult);
-    char strNonce[LEN::NONCE_HEX + 1];
-    memset(strNonce, 0, LEN::NONCE_HEX + 1);
-    Job::toHexLittle(reinterpret_cast<const unsigned char*>(&result.nonce), LEN::NONCE, strNonce);
-    if(diffResult < job.target()) {
-    LOG_INFO("%d SUCCESS [%s] : %s", job.variant(), strResult, strNonce);
-    }
-    else {
-    LOG_INFO("%d FAIL [%s] : %s", job.variant(), strResult, strNonce);
-    }
 
     return diffResult < job.target();
 }

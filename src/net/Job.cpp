@@ -7,6 +7,7 @@
  * Copyright 2017-2018 XMR-Stak    <https://github.com/fireice-uk>, <https://github.com/psychocrypt>
  * Copyright 2018      Lee Clagett <https://github.com/vtnerd>
  * Copyright 2016-2018 XMRig       <https://github.com/xmrig>, <support@xmrig.com>
+ * Copyright 2018      Team-Hycon  <https://github.com/Team-Hycon>
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -165,11 +166,45 @@ bool Job::setTarget(const char *target)
         return false;
     }
 
-    // m_diff = toDiff(m_target);
     m_diff = m_target;
     return true;
 }
 
+bool Job::setJobId(const char *id)
+{
+    if(!id) {
+        return false; 
+    }
+    const size_t jobIdLen = strlen(id);
+    if(jobIdLen != LEN::NONCE_HEX){
+        return false;
+    }
+    char jobId[LEN::NONCE_HEX+1];
+    memset(jobId, 0, LEN::NONCE_HEX+1);
+    memcpy(jobId, id, jobIdLen);
+
+    if(!fromHex(jobId, jobIdLen, reinterpret_cast<unsigned char*>(&m_jobId))){
+        return false;
+    }
+    return true;
+}
+
+bool Job::setJobUnit(const char *unit){
+    if(!unit) {
+        return false; 
+    }
+
+    const size_t unitLen = strlen(unit);
+
+    char jobUnit[unitLen+1];
+    memset(jobUnit, 0, unitLen+1);
+    memcpy(jobUnit, unit, unitLen);
+
+    if(!fromHex(jobUnit, unitLen, reinterpret_cast<unsigned char*>(&m_jobUnit)) || m_jobUnit == 0){
+        return false;
+    }
+    return true;
+}
 
 void Job::setCoin(const char *coin)
 {
@@ -204,7 +239,6 @@ bool Job::fromHex(const char* in, unsigned int len, unsigned char* out)
 {
     bool error = false;
     for (unsigned int i = 0; i < len; i += 2) {
-        // out[i / 2] = (hf_hex2bin(in[i], error) << 4) | hf_hex2bin(in[i + 1], error);
         out[(len -i -1) / 2] = (hf_hex2bin(in[i], error) << 4) | (hf_hex2bin(in[i + 1], error) );
 
         if (error) {

@@ -6,6 +6,7 @@
  * Copyright 2016      Jay D Dee   <jayddee246@gmail.com>
  * Copyright 2017-2018 XMR-Stak    <https://github.com/fireice-uk>, <https://github.com/psychocrypt>
  * Copyright 2016-2018 XMRig       <https://github.com/xmrig>, <support@xmrig.com>
+ * Copyright 2018      Team-Hycon  <https://github.com/Team-Hycon>
  *
  *   This program is free software: you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -75,7 +76,7 @@ public:
     inline uint16_t port() const             { return m_url.port(); }
     inline void setQuiet(bool quiet)         { m_quiet = quiet; }
     inline void setRetryPause(int ms)        { m_retryPause = ms; }
-    bool test = false;
+
 private:
     ~Client();
 
@@ -115,7 +116,6 @@ private:
     char m_buf[2048];
     char m_ip[46];
     char m_sendBuf[768];
-    const char *m_agent;
     IClientListener *m_listener;
     int m_id;
     int m_retryPause;
