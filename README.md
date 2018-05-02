@@ -2,7 +2,7 @@
 
 HYCminer is a high performance Hycon (HYC) OpenCL miner, forked from [XMRig](https://github.com/xmrig/xmrig) release v2.6.1.
 
-* This is the **AMD GPU** mining version, there is also a [CPU version](https://bitbucket.org/glosfer/cpu-miner) and [NVIDIA GPU version](https://bitbucket.org/glosfer/miner-nvidia).
+* This is the **AMD GPU** mining version, there is also a [CPU version](https://github.com/team-hycon/xmrig) and [NVIDIA GPU version](https://github.com/team-hycon/xmrig-nvidia).
 * We plan on releasing our roadmap for next releases soon.
 
 #### Table of contents
@@ -10,7 +10,7 @@ HYCminer is a high performance Hycon (HYC) OpenCL miner, forked from [XMRig](htt
 * [Download](#download)
 * [Usage](#usage)
 * [Algorithm variations](#algorithm-variations)
-* [Build](https://bitbucket.org/glosfer/miner-amd/wiki/Build)
+* [Build](https://github.com/team-hycon/xmrig-amd/wiki/Build)
 * [Common Issues](#common-issues)
 * [Other information](#other-information)
 * [Contacts](#contacts)
@@ -28,8 +28,8 @@ HYCminer is a high performance Hycon (HYC) OpenCL miner, forked from [XMRig](htt
 
 ## Download
 * Binary releases: TBA
-* Git tree: https://bitbucket.org/glosfer/miner-amd.git
-    * Clone with `git clone https://bitbucket.org/glosfer/miner-amd.git` :hammer: [Build instructions](https://bitbucket.org/glosfer/miner-nvidia/wiki/Build).
+* Git tree: https://github.com/team-hycon/xmrig-amd.git
+    * Clone with `git clone https://github.com/team-hycon/xmrig-amd.git` :hammer: [Build instructions](https://github.com/team-hycon/xmrig-amd/wiki/Build).
 
 ## Usage
 See the example `config.json` to configure the miner.
