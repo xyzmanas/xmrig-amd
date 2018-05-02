@@ -72,4 +72,9 @@ Also you can use configuration via config file, default **config.json**. You can
 
 ## Contacts
 * hycon@glosfer.com
-* [reddit](https://www.reddit.com/user/TeamHycon)
+* [site](https://www.hycon.io)
+* [reddit](https://www.reddit.com/r/HYCON)
+* [facebook](https://www.facebook.com/teamHycon)
+* [instagram](https://www.instagram.com/teamhycon)
+* [medium](https://www.medium.com/@teamhycon)
+* [twitter](https://www.twitter.com/teamhycon)
