@@ -800,7 +800,6 @@ size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, u
 
     if((ret = clEnqueueNDRangeKernel(ctx->CommandQueues, ctx->Kernels[0], 2, Nonce, gthreads, lthreads, 0, NULL, NULL)) != CL_SUCCESS)
     {
-        LOG_INFO("ERR : %" PRIu64 " %" PRIu64, ctx->Nonce, sizeof(cl_mem));
         LOG_ERR("Error %s when calling clEnqueueNDRangeKernel for kernel %d.", err_to_str(ret), 0);
         return OCL_ERR_API;
     }
@@ -823,7 +822,6 @@ size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, u
 
     if((ret = clEnqueueNDRangeKernel(ctx->CommandQueues, ctx->Kernels[1 + cn_kernel_offset], 1, &tmpNonce, &g_thd, &w_size, 0, NULL, NULL)) != CL_SUCCESS)
     {
-        LOG_INFO("ERR : %" PRIu64 " %" PRIu64, tmpNonce, ctx->Nonce);
         LOG_ERR("Error %s when calling clEnqueueNDRangeKernel for kernel %d.", err_to_str(ret), 1);
         return OCL_ERR_API;
     }
@@ -870,8 +868,6 @@ size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, u
 
             // round up to next multiple of w_size
             BranchNonces[i] = ((BranchNonces[i] + w_size - 1u) / w_size) * w_size;
-
-            // LOG_INFO("BRANCH NONCE : %" PRIu64, BranchNonces[i]);
 
             // number of global threads must be a multiple of the work group size (w_size)
             assert(BranchNonces[i]%w_size == 0);

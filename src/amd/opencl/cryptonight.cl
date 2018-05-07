@@ -924,6 +924,9 @@ __kernel void Skein(__global ulong *states, __global ulong *BranchBuf, __global 
         // The tweak for the output transform is Type = Output with the Final bit set
         // T[0] for the output is 8, and I don't know why - should be message size...
         ulong t[3] = { 0x00UL, 0x7000000000000000UL, 0x00UL };
+        t[0] = 0x00UL;
+        t[1] = 0x7000000000000000UL;
+        t[2] = 0x00UL;
         ulong8 p, m;
 
         for(uint i = 0; i < 4; ++i)
@@ -945,10 +948,10 @@ __kernel void Skein(__global ulong *states, __global ulong *BranchBuf, __global 
         t[1] = 0xFF00000000000000UL;
         t[2] = t[0] ^ t[1];
 
-        p = (ulong8)(0);
+        m = (ulong8)(0);
         const ulong h8 = h.s0 ^ h.s1 ^ h.s2 ^ h.s3 ^ h.s4 ^ h.s5 ^ h.s6 ^ h.s7 ^ SKEIN_KS_PARITY;
 
-        p = Skein512Block(p, h, h8, t);
+        p = Skein512Block(m, h, h8, t);
 
         //vstore8(p, 0, output);
 
@@ -956,15 +959,13 @@ __kernel void Skein(__global ulong *states, __global ulong *BranchBuf, __global 
         // and expect an accurate result for target > 32-bit without implementing carries
         uint diffValue = (( p.s0 & 0x00000000000000ff) << 8) + ((p.s0 & 0x000000000000ff00) >> 8);
         
-        // if(diffValue <= Target)
-        // {
-
-        //     ulong outIdx = atomic_inc(output + 0xFF);
-        //     if(outIdx < 0xFF) {
-        //         output[outIdx] = startNonce + BranchBuf[idx] + get_global_offset(0);
-        //         printf("SKEIN [%d %d %d] : %016llx %016llx %016llx %016llx %016llx %016llx %016llx %016llx\n", output[outIdx], BranchBuf[idx], get_global_offset(0), p.s0, p.s1, p.s2, p.s3, p.s4, p.s5, p.s6, p.s7);
-        //     }
-        // }
+        if(diffValue <= Target)
+        {
+            ulong outIdx = atomic_inc(output + 0xFF);
+            if(outIdx < 0xFF) {
+                output[outIdx] = startNonce + BranchBuf[idx] + get_global_offset(0);
+            }
+        }
     }
     mem_fence(CLK_GLOBAL_MEM_FENCE);
 }
