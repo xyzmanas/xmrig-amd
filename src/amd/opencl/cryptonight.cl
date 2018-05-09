@@ -21,6 +21,10 @@ R"===(
 #   pragma OPENCL EXTENSION cl_clang_storage_class_specifiers : enable
 #endif
 
+
+#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
+
+
 #ifdef cl_amd_media_ops
 #pragma OPENCL EXTENSION cl_amd_media_ops : enable
 #else

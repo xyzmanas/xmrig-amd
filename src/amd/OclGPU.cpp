@@ -692,7 +692,7 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
             return OCL_ERR_API;
         }
 
-        if ((ret = clSetKernelArg(ctx->Kernels[1 + cn_kernel_offset], 4, sizeof(cl_mem), &moneroNonce)) != CL_SUCCESS) {
+        if ((ret = clSetKernelArg(ctx->Kernels[1 + cn_kernel_offset], 4, sizeof(cl_uint), &moneroNonce)) != CL_SUCCESS) {
             LOG_ERR(kSetKernelArgErr, err_to_str(ret), 1 + cn_kernel_offset, 4);
             return OCL_ERR_API;
         }
