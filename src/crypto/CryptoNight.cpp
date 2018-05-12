@@ -45,9 +45,9 @@ xmrig::AlgoVerify CryptoNight::m_av  = xmrig::VERIFY_HW_AES;
 bool CryptoNight::hash(const Job &job, JobResult &result, cryptonight_ctx *ctx)
 {
     fn(job.variant())(job.blob(), job.size(), result.result, ctx);
-    uint32_t diffResult = (result.result[0] << 8) + (result.result[1] );
+    uint64_t* hash = reinterpret_cast<uint64_t*>(&result.result);
 
-    return diffResult < job.target();
+    return (hash[3] < job.targetAll(3)) || ((hash[3] == job.targetAll(3)) && (hash[2] < job.targetAll(2)));
 }
 
 

@@ -632,7 +632,7 @@ size_t InitOpenCL(GpuContext* ctx, size_t num_gpus, size_t platform_idx)
     return OCL_ERR_SUCCESS;
 }
 
-size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t target, xmrig::Algo algorithm, uint32_t variant, uint32_t moneroNonce, uint64_t* startNonce)
+size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t* target, xmrig::Algo algorithm, uint32_t variant, uint32_t moneroNonce, uint64_t* startNonce)
 {
     cl_int ret;
 
@@ -729,8 +729,8 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
             return OCL_ERR_API;
         }
 
-        // Target
-        if ((ret = clSetKernelArg(ctx->Kernels[i + 3], 3, sizeof(cl_ulong), &target)) != CL_SUCCESS) {
+        // Target 2
+        if ((ret = clSetKernelArg(ctx->Kernels[i + 3], 3, sizeof(cl_mem), &target[2])) != CL_SUCCESS) {
             LOG_ERR(kSetKernelArgErr, err_to_str(ret), i + 3, 3);
             return OCL_ERR_API;
         }
@@ -738,6 +738,12 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
         // Start Nonce
         if ((ret = clSetKernelArg(ctx->Kernels[i + 3], 5, sizeof(cl_ulong), startNonce)) != CL_SUCCESS) {
             LOG_ERR(kSetKernelArgErr, err_to_str(ret), i + 3, 5);
+            return OCL_ERR_API;
+        }
+
+        // Target 1
+        if ((ret = clSetKernelArg(ctx->Kernels[i + 3], 6, sizeof(cl_mem), &target[3])) != CL_SUCCESS) {
+            LOG_ERR(kSetKernelArgErr, err_to_str(ret), i + 3, 3);
             return OCL_ERR_API;
         }
     }

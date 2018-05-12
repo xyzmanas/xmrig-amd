@@ -5,6 +5,7 @@
  * Copyright 2014-2016 Wolf9466    <https://github.com/OhGodAPet>
  * Copyright 2016      Jay D Dee   <jayddee246@gmail.com>
  * Copyright 2016-2017 XMRig       <support@xmrig.com>
+ * Copyright 2018      Team-Hycon  <https://github.com/Team-Hycon>
  *
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -238,7 +239,7 @@ void Workers::onResult(uv_async_t *handle)
             JobBaton *baton = static_cast<JobBaton*>(req->data);
             cryptonight_ctx *ctx = static_cast<cryptonight_ctx*>(_mm_malloc(sizeof(cryptonight_ctx), 16));
 
-            for (const Job &job : baton->jobs) {
+            for (Job &job : baton->jobs) {
                 JobResult result(job);
 
                 if (CryptoNight::hash(job, result, ctx)) {
