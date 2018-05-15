@@ -23,8 +23,8 @@
     "pools": [
         {
             "url": "127.0.0.1:9081",
-            "user": "4L7DhwADX9Y6wN7BfFBaEfF3Fw8uc3LiV8NUpTXgNDk8EeP732b1yRxJGuNLwr4nowbn7g6kocN5LgVGVqsXuSseH6gVQy8yaXKJsKE1Hj",
-            "pass": "yjw@glosfer.com",
+            "user": "userid",
+            "pass": "pw",
             "keepalive": true,
             "nicehash": false,
             "variant": -1
