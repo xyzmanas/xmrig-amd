@@ -47,7 +47,7 @@ bool CryptoNight::hash(const Job &job, JobResult &result, cryptonight_ctx *ctx)
     fn(job.variant())(job.blob(), job.size(), result.result, ctx);
     uint64_t* hash = reinterpret_cast<uint64_t*>(&result.result);
 
-    return (hash[3] < job.targetAll(3)) || ((hash[3] == job.targetAll(3)) && (hash[2] < job.targetAll(2)));
+    return hash[3] < job.target();
 }
 
 

@@ -910,7 +910,7 @@ R"===(
 
 #define VSWAP4(x)   ((((x) >> 24) & 0xFFU) | (((x) >> 8) & 0xFF00U) | (((x) << 8) & 0xFF0000U) | (((x) << 24) & 0xFF000000U))
 
-__kernel void Skein(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target2, ulong Threads, ulong startNonce, ulong Target1)
+__kernel void Skein(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
 {
     const ulong idx = get_global_id(0) - get_global_offset(0);
 
@@ -962,7 +962,7 @@ __kernel void Skein(__global ulong *states, __global ulong *BranchBuf, __global 
         // Note that comparison is equivalent to subtraction - we can't just compare 8 32-bit values
         // and expect an accurate result for target > 32-bit without implementing carries
         
-        if((p.s3 < Target1) || ((p.s3 < Target1) && (p.s2 < Target2)))
+        if(p.s3 < Target)
         {
             ulong outIdx = atomic_inc(output + 0xFF);
             if(outIdx < 0xFF) {
@@ -996,7 +996,7 @@ __kernel void Skein(__global ulong *states, __global ulong *BranchBuf, __global 
     h7h ^= input[6]; \
     h7l ^= input[7]
 
-__kernel void JH(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target2, ulong Threads, ulong startNonce, ulong Target1)
+__kernel void JH(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
 {
     const uint idx = get_global_id(0) - get_global_offset(0);
 
@@ -1040,7 +1040,7 @@ __kernel void JH(__global ulong *states, __global ulong *BranchBuf, __global ulo
         // Note that comparison is equivalent to subtraction - we can't just compare 8 32-bit values
         // and expect an accurate result for target > 32-bit without implementing carries
 
-        if((h7l < Target1) || ((h7l < Target1) && (h7h < Target2)))   
+        if(h7l < Target)
         {
             ulong outIdx = atomic_inc(output + 0xFF);
             if(outIdx < 0xFF) {
@@ -1052,7 +1052,7 @@ __kernel void JH(__global ulong *states, __global ulong *BranchBuf, __global ulo
 
 #define SWAP4(x)    as_uint(as_uchar4(x).s3210)
 
-__kernel void Blake(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target2, ulong Threads, ulong startNonce, ulong Target1)
+__kernel void Blake(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
 {
     const uint idx = get_global_id(0) - get_global_offset(0);
 
@@ -1118,8 +1118,7 @@ __kernel void Blake(__global ulong *states, __global ulong *BranchBuf, __global 
         
         // Note that comparison is equivalent to subtraction - we can't just compare 8 32-bit values
         // and expect an accurate result for target > 32-bit without implementing carries
-        if((as_ulong((uint2)(h[6],h[7])) < Target1) || ((as_ulong((uint2)(h[6],h[7])) < Target1) && (as_ulong((uint2)(h[4],h[5])) < Target2)))
-        {
+        if(as_ulong((uint2)(h[6],h[7])) < Target) {
             ulong outIdx = atomic_inc(output + 0xFF);
             if(outIdx < 0xFF) {
                 output[outIdx] = startNonce + BranchBuf[idx] + get_global_offset(0);
@@ -1128,7 +1127,7 @@ __kernel void Blake(__global ulong *states, __global ulong *BranchBuf, __global 
     }
 }
 
-__kernel void Groestl(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target2, ulong Threads, ulong startNonce, ulong Target1)
+__kernel void Groestl(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
 {
     const uint idx = get_global_id(0) - get_global_offset(0);
 
@@ -1180,7 +1179,7 @@ __kernel void Groestl(__global ulong *states, __global ulong *BranchBuf, __globa
 
         // Note that comparison is equivalent to subtraction - we can't just compare 8 32-bit values
         // and expect an accurate result for target > 32-bit without implementing carries
-        if((State[7] < Target1) || ((State[7] < Target1) && (State[6] < Target2)))
+        if(State[7] < Target)
         {
             ulong outIdx = atomic_inc(output + 0xFF);
             if(outIdx < 0xFF) {

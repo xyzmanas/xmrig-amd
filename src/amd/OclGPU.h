@@ -48,7 +48,7 @@ int getAMDPlatformIdx();
 std::vector<GpuContext> getAMDDevices(int index);
 
 size_t InitOpenCL(GpuContext* ctx, size_t num_gpus, size_t platform_idx);
-size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t* target, xmrig::Algo algorithm, uint32_t variant, uint32_t moneroNonce, uint64_t* startNonce);
+size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t target, xmrig::Algo algorithm, uint32_t variant, uint32_t moneroNonce, uint64_t* startNonce);
 size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, uint32_t variant, uint64_t* startNonce);
 
 #endif /* __OCLGPU_H__ */
