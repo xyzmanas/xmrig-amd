@@ -27,7 +27,7 @@
             "pass": "pw",
             "keepalive": true,
             "nicehash": false,
-            "variant": -1
+            "variant": 1
         }
     ],
     "api": {
