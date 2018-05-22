@@ -1,7 +1,7 @@
 R"===(
 /* Team-Hycon
   * Copyright 2018      Team-Hycon  <https://github.com/Team-Hycon>
-  * 
+  *
   * This program is free software: you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
   * the Free Software Foundation, either version 3 of the License, or
@@ -20,10 +20,6 @@ R"===(
 #ifdef cl_clang_storage_class_specifiers
 #   pragma OPENCL EXTENSION cl_clang_storage_class_specifiers : enable
 #endif
-
-
-#pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
-
 
 #ifdef cl_amd_media_ops
 #pragma OPENCL EXTENSION cl_amd_media_ops : enable
@@ -443,7 +439,7 @@ inline ulong getIdx()
 #define mix_and_propagate(xin) (xin)[(get_local_id(1)) % 8][get_local_id(0)] ^ (xin)[(get_local_id(1) + 1) % 8][get_local_id(0)]
 
 __attribute__((reqd_work_group_size(WORKSIZE, 8, 1)))
-__kernel void cn0(__global ulong *input, __global uint4 *Scratchpad, __global ulong *states, ulong Threads, ulong startNonce)
+__kernel void cn0(__global ulong *input, __global uint4 *Scratchpad, __global ulong *states, ulong Threads)
 {
     ulong State[25];
     uint ExpandedKey1[40];
@@ -468,10 +464,10 @@ __kernel void cn0(__global ulong *input, __global uint4 *Scratchpad, __global ul
 #   if (COMP_MODE == 1)
     // do not use early return here
     if(gIdx < Threads)
-    #   endif
+#   endif
     {
         states += 25 * gIdx;
-        
+
 #       if (STRIDED_INDEX == 0)
         Scratchpad += gIdx * (MEMORY >> 4);
 #       elif (STRIDED_INDEX == 1)
@@ -479,21 +475,17 @@ __kernel void cn0(__global ulong *input, __global uint4 *Scratchpad, __global ul
 #       elif (STRIDED_INDEX == 2)
         Scratchpad += get_group_id(0) * (MEMORY >> 4) * WORKSIZE + MEM_CHUNK * get_local_id(0);
 #       endif
-        
+
         ((ulong8 *)State)[0] = vload8(0, input);
         State[8] = input[8];
-        State[9] = input[9];
-        State[10] = input[10];
-        ((uint *)State)[16] = ((startNonce + get_global_id(0)) & 0x00000000ffffffffU);
-        ((uint *)State)[17] = ((startNonce + get_global_id(0)) & 0xffffffff00000000U) >> 32;
-        
-        for(int i = 9; i < 25; ++i) State[i] = 0x0000000000000000UL;
-        // State[8] = 0x01;
+        ((uint *)State)[17] = get_global_id(0);
+
+        for(int i = 9; i < 25; ++i) State[i] = 0x00UL;
         State[9] = 0x01;
 
         // Last bit of padding
         State[16] = 0x8000000000000000UL;
-        
+
         keccakf1600_2(State);
     }
 
@@ -745,7 +737,7 @@ __kernel void cn1(__global uint4 *Scratchpad, __global ulong *states, ulong Thre
 }
 
 __attribute__((reqd_work_group_size(WORKSIZE, 8, 1)))
-__kernel void cn2(__global uint4 *Scratchpad, __global ulong *states, __global ulong *Branch0, __global ulong *Branch1, __global ulong *Branch2, __global ulong *Branch3, ulong Threads)
+__kernel void cn2(__global uint4 *Scratchpad, __global ulong *states, __global uint *Branch0, __global uint *Branch1, __global uint *Branch2, __global uint *Branch3, ulong Threads)
 {
     __local uint AES0[256], AES1[256], AES2[256], AES3[256];
     uint ExpandedKey2[40];
@@ -859,14 +851,14 @@ __kernel void cn2(__global uint4 *Scratchpad, __global ulong *states, __global u
      */
     for(size_t i=0; i < 16; i++)
     {
-            #pragma unroll
-            for(int j = 0; j < 10; ++j)
-                text = AES_Round(AES0, AES1, AES2, AES3, text, ((uint4 *)ExpandedKey2)[j]);
-            barrier(CLK_LOCAL_MEM_FENCE);
-            xin[get_local_id(1)][get_local_id(0)] = text;
-            barrier(CLK_LOCAL_MEM_FENCE);
-            text = mix_and_propagate(xin);
-        }
+        #pragma unroll
+        for(int j = 0; j < 10; ++j)
+            text = AES_Round(AES0, AES1, AES2, AES3, text, ((uint4 *)ExpandedKey2)[j]);
+        barrier(CLK_LOCAL_MEM_FENCE);
+        xin[get_local_id(1)][get_local_id(0)] = text;
+        barrier(CLK_LOCAL_MEM_FENCE);
+        text = mix_and_propagate(xin);
+    }
 #   endif
 
 #   if (COMP_MODE == 1)
@@ -878,6 +870,7 @@ __kernel void cn2(__global uint4 *Scratchpad, __global ulong *states, __global u
     }
 
     barrier(CLK_GLOBAL_MEM_FENCE);
+
 #   if (COMP_MODE == 1)
     // do not use early return here
     if(gIdx < Threads)
@@ -891,13 +884,13 @@ __kernel void cn2(__global uint4 *Scratchpad, __global ulong *states, __global u
 
             for(int i = 0; i < 25; ++i) states[i] = State[i];
 
-           ulong StateSwitch = State[0] & 3;
-            __global ulong *destinationBranch1 = StateSwitch == 0 ? Branch0 : Branch1;
-            __global ulong *destinationBranch2 = StateSwitch == 2 ? Branch2 : Branch3;
-            __global ulong *destinationBranch = StateSwitch < 2 ? destinationBranch1 : destinationBranch2;
+            ulong StateSwitch = State[0] & 3;
+            __global uint *destinationBranch1 = StateSwitch == 0 ? Branch0 : Branch1;
+            __global uint *destinationBranch2 = StateSwitch == 2 ? Branch2 : Branch3;
+            __global uint *destinationBranch = StateSwitch < 2 ? destinationBranch1 : destinationBranch2;
             destinationBranch[atomic_inc(destinationBranch + Threads)] = gIdx;
-            }
         }
+    }
     mem_fence(CLK_GLOBAL_MEM_FENCE);
 }
 
@@ -910,7 +903,7 @@ R"===(
 
 #define VSWAP4(x)   ((((x) >> 24) & 0xFFU) | (((x) >> 8) & 0xFF00U) | (((x) << 8) & 0xFF0000U) | (((x) << 24) & 0xFF000000U))
 
-__kernel void Skein(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
+__kernel void Skein(__global ulong *states, __global uint *BranchBuf, __global uint *output, ulong Target, ulong Threads)
 {
     const ulong idx = get_global_id(0) - get_global_offset(0);
 
@@ -961,12 +954,12 @@ __kernel void Skein(__global ulong *states, __global ulong *BranchBuf, __global 
 
         // Note that comparison is equivalent to subtraction - we can't just compare 8 32-bit values
         // and expect an accurate result for target > 32-bit without implementing carries
-        
+
         if(p.s3 < Target)
         {
             ulong outIdx = atomic_inc(output + 0xFF);
             if(outIdx < 0xFF) {
-                output[outIdx] = startNonce + BranchBuf[idx] + get_global_offset(0);
+                output[outIdx] = BranchBuf[idx] + get_global_offset(0);   
             }
         }
     }
@@ -996,7 +989,7 @@ __kernel void Skein(__global ulong *states, __global ulong *BranchBuf, __global 
     h7h ^= input[6]; \
     h7l ^= input[7]
 
-__kernel void JH(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
+__kernel void JH(__global ulong *states, __global uint *BranchBuf, __global uint *output, ulong Target, ulong Threads)
 {
     const uint idx = get_global_id(0) - get_global_offset(0);
 
@@ -1004,7 +997,7 @@ __kernel void JH(__global ulong *states, __global ulong *BranchBuf, __global ulo
     if(idx < Threads)
     {
         states += 25 * BranchBuf[idx];
-        
+
         sph_u64 h0h = 0xEBD3202C41A398EBUL, h0l = 0xC145B29C7BBECD92UL, h1h = 0xFAC7D4609151931CUL, h1l = 0x038A507ED6820026UL, h2h = 0x45B92677269E23A4UL, h2l = 0x77941AD4481AFBE0UL, h3h = 0x7A176B0226ABB5CDUL, h3l = 0xA82FFF0F4224F056UL;
         sph_u64 h4h = 0x754D2E7F8996A371UL, h4l = 0x62E27DF70849141DUL, h5h = 0x948F2476F7957627UL, h5l = 0x6C29804757B6D587UL, h6h = 0x6C0D8EAC2D275E5CUL, h6l = 0x0F7A0557C6508451UL, h7h = 0xEA12247067D3E47BUL, h7l = 0x69D71CD313ABE389UL;
         sph_u64 tmp;
@@ -1039,20 +1032,19 @@ __kernel void JH(__global ulong *states, __global ulong *BranchBuf, __global ulo
 
         // Note that comparison is equivalent to subtraction - we can't just compare 8 32-bit values
         // and expect an accurate result for target > 32-bit without implementing carries
-
+      
         if(h7l < Target)
         {
             ulong outIdx = atomic_inc(output + 0xFF);
-            if(outIdx < 0xFF) {
-                output[outIdx] = startNonce + BranchBuf[idx] + get_global_offset(0);
-            }
+            if(outIdx < 0xFF)
+                output[outIdx] = BranchBuf[idx] + get_global_offset(0);
         }
     }
 }
 
 #define SWAP4(x)    as_uint(as_uchar4(x).s3210)
 
-__kernel void Blake(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
+__kernel void Blake(__global ulong *states, __global uint *BranchBuf, __global uint *output, ulong Target, ulong Threads)
 {
     const uint idx = get_global_id(0) - get_global_offset(0);
 
@@ -1115,19 +1107,18 @@ __kernel void Blake(__global ulong *states, __global ulong *BranchBuf, __global 
         }
 
         for(int i = 0; i < 8; ++i) h[i] = SWAP4(h[i]);
-        
+
         // Note that comparison is equivalent to subtraction - we can't just compare 8 32-bit values
         // and expect an accurate result for target > 32-bit without implementing carries
         if(as_ulong((uint2)(h[6],h[7])) < Target) {
             ulong outIdx = atomic_inc(output + 0xFF);
-            if(outIdx < 0xFF) {
-                output[outIdx] = startNonce + BranchBuf[idx] + get_global_offset(0);
-            }
+            if(outIdx < 0xFF)
+                output[outIdx] = BranchBuf[idx] + get_global_offset(0);
         }
     }
 }
 
-__kernel void Groestl(__global ulong *states, __global ulong *BranchBuf, __global ulong *output, ulong Target, ulong Threads, ulong startNonce)
+__kernel void Groestl(__global ulong *states, __global uint *BranchBuf, __global uint *output, ulong Target, ulong Threads)
 {
     const uint idx = get_global_id(0) - get_global_offset(0);
 
@@ -1182,9 +1173,8 @@ __kernel void Groestl(__global ulong *states, __global ulong *BranchBuf, __globa
         if(State[7] < Target)
         {
             ulong outIdx = atomic_inc(output + 0xFF);
-            if(outIdx < 0xFF) {
-                output[outIdx] = startNonce + BranchBuf[idx] + get_global_offset(0);
-            }
+            if(outIdx < 0xFF)
+                output[outIdx] = BranchBuf[idx] + get_global_offset(0);
         }
     }
 }

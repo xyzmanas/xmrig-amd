@@ -52,7 +52,7 @@ public:
         jobId  = job.id();
         poolId = job.poolId();
         diff   = job.diff();
-        nonce  = *job.nonce();
+        nonce  = *(job.hyconNonce());
     }
 
 

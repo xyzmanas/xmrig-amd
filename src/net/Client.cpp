@@ -178,7 +178,7 @@ int64_t Client::submit(const JobResult &result)
     char nonce[LEN::NONCE_HEX + 1];
     char data[LEN::RESULT_HEX + 1];
 
-    Job::toHexLittle(reinterpret_cast<const unsigned char*>(&result.nonce), LEN::NONCE, nonce);
+    Job::toHex(reinterpret_cast<const unsigned char*>(&result.nonce), LEN::HYCON_NONCE, nonce);
     nonce[LEN::NONCE_HEX] = '\0';
 
     Job::toHex(result.result, LEN::RESULT, data);
@@ -246,10 +246,11 @@ bool Client::parseJob(const rapidjson::Value &params, int *code)
     Job job(m_id, m_nicehash, m_url.algo(), m_url.variant());
 #   endif
 
-    if (!job.setJobId(params[NOTI::JOB_ID].GetInt(), params[NOTI::MINER_CNT].GetInt())) { 
-        *code = 3;
-        return false;
-    }
+    if (!params[NOTI::JOB_ID].IsUint()) {
+         *code = 3;
+         return false;
+     }
+    job.setJobId(params[NOTI::JOB_ID].GetUint());
 
     if (!job.setBlob(params[NOTI::BLOB].GetString())) {
         *code = 4;
@@ -260,6 +261,8 @@ bool Client::parseJob(const rapidjson::Value &params, int *code)
         *code = 5;
         return false;
     }
+
+    job.setVariant(xmrig::VARIANT_V1);
     
     if (m_job != job) {
         m_jobs++;

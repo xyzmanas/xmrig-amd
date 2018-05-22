@@ -65,9 +65,8 @@ private:
     Job m_pausedJob;
     std::atomic<uint64_t> m_hashCount;
     std::atomic<uint64_t> m_timestamp;
-    uint64_t m_nonce;
-    uint64_t m_pausedNonce;
-    uint64_t m_startNonce;
+    uint32_t m_nonce;
+    uint32_t m_pausedNonce;
     uint64_t m_count;
     uint64_t m_sequence;
     uint8_t m_blob[LEN::BLOB];

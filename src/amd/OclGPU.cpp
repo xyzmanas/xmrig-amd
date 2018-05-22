@@ -235,7 +235,7 @@ size_t InitOpenCLGpu(int index, cl_context opencl_ctx, GpuContext* ctx, const ch
 {
     size_t MaximumWorkSize;
     cl_int ret;
-    
+
     if ((ret = clGetDeviceInfo(ctx->DeviceID, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &MaximumWorkSize, NULL)) != CL_SUCCESS) {
         LOG_ERR("Error %s when querying a device's max worksize using clGetDeviceInfo.", err_to_str(ret));
         return OCL_ERR_API;
@@ -286,35 +286,35 @@ size_t InitOpenCLGpu(int index, cl_context opencl_ctx, GpuContext* ctx, const ch
     }
 
     // Blake-256 branches
-    ctx->ExtraBuffers[2] = clCreateBuffer(opencl_ctx, CL_MEM_READ_WRITE, sizeof(cl_ulong) * (g_thd + 2), NULL, &ret);
+    ctx->ExtraBuffers[2] = clCreateBuffer(opencl_ctx, CL_MEM_READ_WRITE, sizeof(cl_uint) * (g_thd + 2), NULL, &ret);
     if (ret != CL_SUCCESS){
         LOG_ERR("Error %s when calling clCreateBuffer to create Branch 0 buffer.", err_to_str(ret));
         return OCL_ERR_API;
     }
 
     // Groestl-256 branches
-    ctx->ExtraBuffers[3] = clCreateBuffer(opencl_ctx, CL_MEM_READ_WRITE, sizeof(cl_ulong) * (g_thd + 2), NULL, &ret);
+    ctx->ExtraBuffers[3] = clCreateBuffer(opencl_ctx, CL_MEM_READ_WRITE, sizeof(cl_uint) * (g_thd + 2), NULL, &ret);
     if(ret != CL_SUCCESS) {
         LOG_ERR("Error %s when calling clCreateBuffer to create Branch 1 buffer.", err_to_str(ret));
         return OCL_ERR_API;
     }
 
     // JH-256 branches
-    ctx->ExtraBuffers[4] = clCreateBuffer(opencl_ctx, CL_MEM_READ_WRITE, sizeof(cl_ulong) * (g_thd + 2), NULL, &ret);
+    ctx->ExtraBuffers[4] = clCreateBuffer(opencl_ctx, CL_MEM_READ_WRITE, sizeof(cl_uint) * (g_thd + 2), NULL, &ret);
     if (ret != CL_SUCCESS) {
         LOG_ERR("Error %s when calling clCreateBuffer to create Branch 2 buffer.", err_to_str(ret));
         return OCL_ERR_API;
     }
 
     // Skein-512 branches
-    ctx->ExtraBuffers[5] = clCreateBuffer(opencl_ctx, CL_MEM_READ_WRITE, sizeof(cl_ulong) * (g_thd + 2), NULL, &ret);
+    ctx->ExtraBuffers[5] = clCreateBuffer(opencl_ctx, CL_MEM_READ_WRITE, sizeof(cl_uint) * (g_thd + 2), NULL, &ret);
     if (ret != CL_SUCCESS) {
         LOG_ERR("Error %s when calling clCreateBuffer to create Branch 3 buffer.", err_to_str(ret));
         return OCL_ERR_API;
     }
 
     // Assume we may find up to 0xFF nonces in one run - it's reasonable
-    ctx->OutputBuffer = clCreateBuffer(opencl_ctx, CL_MEM_READ_WRITE, sizeof(cl_ulong) * 0x100, NULL, &ret);
+    ctx->OutputBuffer = clCreateBuffer(opencl_ctx, CL_MEM_READ_WRITE, sizeof(cl_uint) * 0x100, NULL, &ret);
     if (ret != CL_SUCCESS) {
         LOG_ERR("Error %s when calling clCreateBuffer to create output buffer.", err_to_str(ret));
         return OCL_ERR_API;
@@ -326,7 +326,7 @@ size_t InitOpenCLGpu(int index, cl_context opencl_ctx, GpuContext* ctx, const ch
         return OCL_ERR_API;
     }
 
-     char options[512];
+    char options[512];
     snprintf(options, sizeof(options), "-DITERATIONS=%u -DMASK=%u -DWORKSIZE=%zu -DSTRIDED_INDEX=%d -DMEM_CHUNK_EXPONENT=%d -DCOMP_MODE=%d -DMEMORY=%zu -DALGO=%d",
              hashIterations, threadMemMask, ctx->workSize, ctx->stridedIndex, static_cast<int>(1u << ctx->memChunk),
              ctx->compMode, hashMemSize, static_cast<int>(algo)
@@ -632,21 +632,21 @@ size_t InitOpenCL(GpuContext* ctx, size_t num_gpus, size_t platform_idx)
     return OCL_ERR_SUCCESS;
 }
 
-size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t target, xmrig::Algo algorithm, uint32_t variant, uint32_t moneroNonce, uint64_t* startNonce)
+size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t target, xmrig::Algo algorithm, uint32_t variant, uint32_t moneroNonce)
 {
     cl_int ret;
 
     if (input_len > LEN::BLOB) {
         return OCL_ERR_BAD_PARAMS;
     }
-    
+
     size_t numThreads = ctx->rawIntensity;
 
     if ((ret = clEnqueueWriteBuffer(ctx->CommandQueues, ctx->InputBuffer, CL_TRUE, 0, LEN::BLOB, input, 0, NULL, NULL)) != CL_SUCCESS) {
         LOG_ERR("Error %s when calling clEnqueueWriteBuffer to fill input buffer.", err_to_str(ret));
         return OCL_ERR_API;
     }
-    
+
     if ((ret = clSetKernelArg(ctx->Kernels[0], 0, sizeof(cl_mem), &ctx->InputBuffer)) != CL_SUCCESS) {
         LOG_ERR(kSetKernelArgErr, err_to_str(ret), 0, 0);
         return OCL_ERR_API;
@@ -660,12 +660,6 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
     // Threads
     if((ret = clSetKernelArg(ctx->Kernels[0], 3, sizeof(cl_ulong), &numThreads)) != CL_SUCCESS) {
         LOG_ERR(kSetKernelArgErr, err_to_str(ret), 0, 3);
-        return OCL_ERR_API;
-    }
-
-    // Start Nonce
-    if((ret = clSetKernelArg(ctx->Kernels[0], 4, sizeof(cl_ulong), startNonce)) != CL_SUCCESS) {
-        LOG_ERR(kSetKernelArgErr, err_to_str(ret), 0, 4);
         return OCL_ERR_API;
     }
 
@@ -691,8 +685,8 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
             LOG_ERR(kSetKernelArgErr, err_to_str(ret), 1 + cn_kernel_offset, 3);
             return OCL_ERR_API;
         }
-
-        if ((ret = clSetKernelArg(ctx->Kernels[1 + cn_kernel_offset], 4, sizeof(cl_uint), &moneroNonce)) != CL_SUCCESS) {
+        
+         if ((ret = clSetKernelArg(ctx->Kernels[1 + cn_kernel_offset], 4, sizeof(cl_uint), &moneroNonce)) != CL_SUCCESS) {
             LOG_ERR(kSetKernelArgErr, err_to_str(ret), 1 + cn_kernel_offset, 4);
             return OCL_ERR_API;
         }
@@ -729,27 +723,20 @@ size_t XMRSetJob(GpuContext* ctx, uint8_t* input, size_t input_len, uint64_t tar
             return OCL_ERR_API;
         }
 
-        // Target 
-        if ((ret = clSetKernelArg(ctx->Kernels[i + 3], 3, sizeof(cl_mem), &target)) != CL_SUCCESS) {
+        // Target
+        if ((ret = clSetKernelArg(ctx->Kernels[i + 3], 3, sizeof(cl_ulong), &target)) != CL_SUCCESS) {
             LOG_ERR(kSetKernelArgErr, err_to_str(ret), i + 3, 3);
             return OCL_ERR_API;
         }
-
-        // Start Nonce
-        if ((ret = clSetKernelArg(ctx->Kernels[i + 3], 5, sizeof(cl_ulong), startNonce)) != CL_SUCCESS) {
-            LOG_ERR(kSetKernelArgErr, err_to_str(ret), i + 3, 5);
-            return OCL_ERR_API;
-        }
-
     }
 
     return OCL_ERR_SUCCESS;
 }
 
-size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, uint32_t variant, uint64_t* startNonce)
+size_t XMRRunJob(GpuContext* ctx, cl_uint* HashOutput, xmrig::Algo algorithm, uint32_t variant)
 {
     cl_int ret;
-    cl_ulong zero = 0;
+    cl_uint zero = 0;
     size_t BranchNonces[4];
     memset(BranchNonces,0,sizeof(size_t)*4);
 
@@ -762,14 +749,14 @@ size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, u
 
     for(int i = 2; i < 6; ++i)
     {
-        if((ret = clEnqueueWriteBuffer(ctx->CommandQueues, ctx->ExtraBuffers[i], CL_FALSE, sizeof(cl_ulong) * g_intensity, sizeof(cl_ulong), &zero, 0, NULL, NULL)) != CL_SUCCESS)
+        if((ret = clEnqueueWriteBuffer(ctx->CommandQueues, ctx->ExtraBuffers[i], CL_FALSE, sizeof(cl_uint) * g_intensity, sizeof(cl_uint), &zero, 0, NULL, NULL)) != CL_SUCCESS)
         {
             LOG_ERR("Error %s when calling clEnqueueWriteBuffer to zero branch buffer counter %d.", err_to_str(ret), i - 2);
             return OCL_ERR_API;
         }
     }
 
-    if((ret = clEnqueueWriteBuffer(ctx->CommandQueues, ctx->OutputBuffer, CL_FALSE, sizeof(cl_ulong) * 0xFF, sizeof(cl_ulong), &zero, 0, NULL, NULL)) != CL_SUCCESS)
+    if((ret = clEnqueueWriteBuffer(ctx->CommandQueues, ctx->OutputBuffer, CL_FALSE, sizeof(cl_uint) * 0xFF, sizeof(cl_uint), &zero, 0, NULL, NULL)) != CL_SUCCESS)
     {
         LOG_ERR("Error %s when calling clEnqueueReadBuffer to fetch results.", err_to_str(ret));
         return OCL_ERR_API;
@@ -777,28 +764,7 @@ size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, u
 
     clFinish(ctx->CommandQueues);
 
-    // reset start nonce
-    if((ctx->Nonce + g_intensity) > 0x00000000FFFFFFFF) {
-        (*startNonce) = (*startNonce) + 0x0000000100000000;
-        ctx->Nonce = 0;
-
-        // Start Nonce
-        if((ret = clSetKernelArg(ctx->Kernels[0], 4, sizeof(cl_ulong), startNonce)) != CL_SUCCESS) {
-            LOG_ERR(kSetKernelArgErr, err_to_str(ret), 0, 4);
-            return OCL_ERR_API;
-        }
-
-        for (int i = 0; i < 4; ++i) {
-            // Start Nonce
-            if ((ret = clSetKernelArg(ctx->Kernels[i + 3], 5, sizeof(cl_ulong), startNonce)) != CL_SUCCESS) {
-                LOG_ERR(kSetKernelArgErr, err_to_str(ret), i + 3, 5);
-                return OCL_ERR_API;
-            }
-        }
-    }
-    
     size_t Nonce[2] = {ctx->Nonce, 1}, gthreads[2] = { g_thd, 8 }, lthreads[2] = { w_size, 8 };
-
     if((ret = clEnqueueNDRangeKernel(ctx->CommandQueues, ctx->Kernels[0], 2, Nonce, gthreads, lthreads, 0, NULL, NULL)) != CL_SUCCESS)
     {
         LOG_ERR("Error %s when calling clEnqueueNDRangeKernel for kernel %d.", err_to_str(ret), 0);
@@ -815,7 +781,6 @@ size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, u
     }*/
 
     size_t tmpNonce = ctx->Nonce;
-
     int cn_kernel_offset = 0;
     if (algorithm != xmrig::CRYPTONIGHT_HEAVY && variant > 0) {
         cn_kernel_offset = 6;
@@ -833,25 +798,25 @@ size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, u
         return OCL_ERR_API;
     }
 
-    if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[2], CL_FALSE, sizeof(cl_ulong) * g_intensity, sizeof(cl_ulong), BranchNonces, 0, NULL, NULL)) != CL_SUCCESS)
+    if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[2], CL_FALSE, sizeof(cl_uint) * g_intensity, sizeof(cl_uint), BranchNonces, 0, NULL, NULL)) != CL_SUCCESS)
     {
         LOG_ERR("Error %s when calling clEnqueueReadBuffer to fetch results.", err_to_str(ret));
         return OCL_ERR_API;
     }
 
-    if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[3], CL_FALSE, sizeof(cl_ulong) * g_intensity, sizeof(cl_ulong), BranchNonces + 1, 0, NULL, NULL)) != CL_SUCCESS)
+    if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[3], CL_FALSE, sizeof(cl_uint) * g_intensity, sizeof(cl_uint), BranchNonces + 1, 0, NULL, NULL)) != CL_SUCCESS)
     {
         LOG_ERR("Error %s when calling clEnqueueReadBuffer to fetch results.", err_to_str(ret));
         return OCL_ERR_API;
     }
 
-    if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[4], CL_FALSE, sizeof(cl_ulong) * g_intensity, sizeof(cl_ulong), BranchNonces + 2, 0, NULL, NULL)) != CL_SUCCESS)
+    if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[4], CL_FALSE, sizeof(cl_uint) * g_intensity, sizeof(cl_uint), BranchNonces + 2, 0, NULL, NULL)) != CL_SUCCESS)
     {
         LOG_ERR("Error %s when calling clEnqueueReadBuffer to fetch results.", err_to_str(ret));
         return OCL_ERR_API;
     }
 
-    if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[5], CL_FALSE, sizeof(cl_ulong) * g_intensity, sizeof(cl_ulong), BranchNonces + 3, 0, NULL, NULL)) != CL_SUCCESS)
+    if((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->ExtraBuffers[5], CL_FALSE, sizeof(cl_uint) * g_intensity, sizeof(cl_uint), BranchNonces + 3, 0, NULL, NULL)) != CL_SUCCESS)
     {
         LOG_ERR("Error %s when calling clEnqueueReadBuffer to fetch results.", err_to_str(ret));
         return OCL_ERR_API;
@@ -869,7 +834,6 @@ size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, u
 
             // round up to next multiple of w_size
             BranchNonces[i] = ((BranchNonces[i] + w_size - 1u) / w_size) * w_size;
-
             // number of global threads must be a multiple of the work group size (w_size)
             assert(BranchNonces[i]%w_size == 0);
             size_t tmpNonce = ctx->Nonce;
@@ -880,7 +844,7 @@ size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, u
         }
     }
 
-    if ((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->OutputBuffer, CL_TRUE, 0, sizeof(cl_ulong) * 0x100, HashOutput, 0, NULL, NULL)) != CL_SUCCESS) {
+    if ((ret = clEnqueueReadBuffer(ctx->CommandQueues, ctx->OutputBuffer, CL_TRUE, 0, sizeof(cl_uint) * 0x100, HashOutput, 0, NULL, NULL)) != CL_SUCCESS) {
         LOG_ERR("Error %s when calling clEnqueueReadBuffer to fetch results.", err_to_str(ret));
         return OCL_ERR_API;
     }
@@ -892,7 +856,7 @@ size_t XMRRunJob(GpuContext* ctx, cl_ulong* HashOutput, xmrig::Algo algorithm, u
         numHashValues = 0xFF;
     }
 
-    ctx->Nonce += (uint64_t) g_intensity;
+    ctx->Nonce += (uint32_t) g_intensity;
 
     return OCL_ERR_SUCCESS;
 }
