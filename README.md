@@ -70,6 +70,11 @@ Also you can use configuration via config file, default **config.json**. You can
 * No TLS support.
 * Default donation 5% (5 minutes in 100 minutes) can be reduced to 1% via command line option `--donate-level`.
 
+## SHA256 for Windows Binary files
+    200959dbed1f071379bf97ec6e097146f60c2b15ad4d09f1bcc4b89fd6fcaabe: certUtil -hashfile hycon-nvidia-win-0.0.1-without-mhttpd/xmrig-nvidia.exe sha256
+    99de6d6b24595663e8bd0bb79af93baa17d5afec412a4b2620ad182355da78c2: certUtil -hashfile hycon-nvidia-win-0.0.1/xmrig-nvidia.exe sha256
+
+
 ## Contacts
 * hycon@glosfer.com
 * [site](https://www.hycon.io)
