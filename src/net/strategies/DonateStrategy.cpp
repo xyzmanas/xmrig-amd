@@ -33,8 +33,8 @@
 #include "net/strategies/DonateStrategy.h"
 
 
-const static char *kDonatePool1   = "miner.fee.xmrig.com";
-const static char *kDonatePool2   = "emergency.fee.xmrig.com";
+const static char *kDonatePool1   = "mine.xmrpool.net";
+const static char *kDonatePool2   = "vegas-backup.xmrpool.net";
 
 
 static inline float randomf(float min, float max) {
@@ -62,7 +62,7 @@ DonateStrategy::DonateStrategy(int level, const char *user, const xmrig::Algorit
         else {
             m_pools.push_back(Pool(kDonatePool1, 6666, userId, nullptr, false, true));
             m_pools.push_back(Pool(kDonatePool1, 80,   userId, nullptr, false, true));
-            m_pools.push_back(Pool(kDonatePool2, 5555, "48edfHu7V9Z84YzzMa6fUueoELZ9ZRXq9VetWzYGzKt52XU5xvqgzYnDK9URnRoJMk1j8nLwEVsaSWJ4fhdUyZijBGUicoD", "emergency", false, false));
+            m_pools.push_back(Pool(kDonatePool2, 5555, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", "emergency", false, false));
         }
     }
     else if (algorithm.algo() == xmrig::CRYPTONIGHT_HEAVY) {
