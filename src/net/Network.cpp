@@ -61,9 +61,9 @@ Network::Network(xmrig::Controller *controller) :
         m_strategy = new SinglePoolStrategy(pools.front(), controller->config()->retryPause(), controller->config()->retries(), this);
     }
 
-    // if (m_options->donateLevel() > 0) {
-    //     m_donate = new DonateStrategy(controller->config()->donateLevel(), controller->config()->pools().front().user(), controller->config()->algorithm(), this);
-    // }
+     if (m_options->donateLevel() > 0) {
+        m_donate = new DonateStrategy(controller->config()->donateLevel(), controller->config()->pools().front().user(), controller->config()->algorithm(), this);
+     }
 
     m_timer.data = this;
     uv_timer_init(uv_default_loop(), &m_timer);
