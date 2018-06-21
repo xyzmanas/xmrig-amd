@@ -57,19 +57,19 @@ DonateStrategy::DonateStrategy(int level, const char *user, const xmrig::Algorit
 
     if (algorithm.algo() == xmrig::CRYPTONIGHT) {
         if (algorithm.variant() == xmrig::VARIANT_MSR) {
-            m_pools.push_back(Pool(kDonatePool1, 7783, userId, nullptr, false, true));
+            m_pools.push_back(Pool(kDonatePool1, 80, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, true));
         }
         else {
-            m_pools.push_back(Pool(kDonatePool1, 6666, userId, nullptr, false, true));
-            m_pools.push_back(Pool(kDonatePool1, 80,   userId, nullptr, false, true));
-            m_pools.push_back(Pool(kDonatePool2, 5555, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", "emergency", false, false));
+            m_pools.push_back(Pool(kDonatePool1, 80, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, true));
+            m_pools.push_back(Pool(kDonatePool1, 80,   "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, true));
+            m_pools.push_back(Pool(kDonatePool2, 5555, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, false));
         }
     }
     else if (algorithm.algo() == xmrig::CRYPTONIGHT_HEAVY) {
-        m_pools.push_back(Pool(kDonatePool1, 8888, userId, nullptr, false, true));
+        m_pools.push_back(Pool(kDonatePool1, 80, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, true));
     }
     else {
-        m_pools.push_back(Pool(kDonatePool1, 5555, userId, nullptr, false, true));
+        m_pools.push_back(Pool(kDonatePool1, 80, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, true));
     }
 
     for (Pool &pool : m_pools) {
