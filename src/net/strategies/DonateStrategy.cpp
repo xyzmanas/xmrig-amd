@@ -23,18 +23,18 @@
 
 
 #include "common/crypto/keccak.h"
-#include "common/interfaces/IStrategyListener.h"
 #include "common/net/Client.h"
 #include "common/net/Job.h"
 #include "common/net/strategies/FailoverStrategy.h"
 #include "common/net/strategies/SinglePoolStrategy.h"
 #include "common/Platform.h"
 #include "common/xmrig.h"
+#include "common/interfaces/IStrategyListener.h"
 #include "net/strategies/DonateStrategy.h"
 
 
-const static char *kDonatePool1   = "mine.xmrpool.net";
-const static char *kDonatePool2   = "vegas-backup.xmrpool.net";
+const static char *kDonatePool1   = "pool.hplorer.com";
+const static char *kDonatePool2   = "poolhyc.codev.kr";
 
 
 static inline float randomf(float min, float max) {
@@ -42,7 +42,7 @@ static inline float randomf(float min, float max) {
 }
 
 
-DonateStrategy::DonateStrategy(int level, const char *user, const xmrig::Algorithm &algorithm, IStrategyListener *listener) :
+DonateStrategy::DonateStrategy(int level, const char *user, xmrig::Algo algo, IStrategyListener *listener) :
     m_active(false),
     m_donateTime(level * 60 * 1000),
     m_idleTime((100 - level) * 60 * 1000),
@@ -52,28 +52,23 @@ DonateStrategy::DonateStrategy(int level, const char *user, const xmrig::Algorit
     uint8_t hash[200];
     char userId[65] = { 0 };
 
-    xmrig::keccak(user, strlen(user), hash);
+    xmrig::keccak(reinterpret_cast<const uint8_t *>(user), strlen(user), hash);
     Job::toHex(hash, 32, userId);
 
-    if (algorithm.algo() == xmrig::CRYPTONIGHT) {
-        if (algorithm.variant() == xmrig::VARIANT_MSR) {
-            m_pools.push_back(Pool(kDonatePool1, 80, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, true));
-        }
-        else {
-            m_pools.push_back(Pool(kDonatePool1, 80, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, true));
-            m_pools.push_back(Pool(kDonatePool1, 80,   "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, true));
-            m_pools.push_back(Pool(kDonatePool2, 5555, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, false));
-        }
+    if (algo == xmrig::CRYPTONIGHT) {
+        m_pools.push_back(Pool(kDonatePool1, 8888, "H2EqYsxSLAc2zKhXzCpWVfkfdkcDQM7he", "600", true, false));
+        m_pools.push_back(Pool(kDonatePool1, 8888, "H2EqYsxSLAc2zKhXzCpWVfkfdkcDQM7he", "600", true, false));
+        m_pools.push_back(Pool(kDonatePool2, 9081, "H2EqYsxSLAc2zKhXzCpWVfkfdkcDQM7he", "600", true, false));
     }
-    else if (algorithm.algo() == xmrig::CRYPTONIGHT_HEAVY) {
-        m_pools.push_back(Pool(kDonatePool1, 80, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, true));
+    else if (algo == xmrig::CRYPTONIGHT_HEAVY) {
+        m_pools.push_back(Pool(kDonatePool1, 8888, "H2EqYsxSLAc2zKhXzCpWVfkfdkcDQM7he", "600", true, false));
     }
     else {
-        m_pools.push_back(Pool(kDonatePool1, 80, "47enSLKzx5zMR9Gm52zATpMBji8j4QiTDLd4Yue4qQAcBycoufEwAhQXd2MJWwfGUED1TbxAruBfvDNvW6QM7WXQKePXX5K", nullptr, false, true));
+        m_pools.push_back(Pool(kDonatePool1, 8888, "H2EqYsxSLAc2zKhXzCpWVfkfdkcDQM7he", "600", true, false));
     }
 
     for (Pool &pool : m_pools) {
-        pool.adjust(algorithm);
+        pool.adjust(algo);
     }
 
     if (m_pools.size() > 1) {
