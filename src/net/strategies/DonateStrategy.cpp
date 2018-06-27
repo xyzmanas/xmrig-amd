@@ -23,13 +23,13 @@
 
 
 #include "common/crypto/keccak.h"
+#include "common/interfaces/IStrategyListener.h"
 #include "common/net/Client.h"
 #include "common/net/Job.h"
 #include "common/net/strategies/FailoverStrategy.h"
 #include "common/net/strategies/SinglePoolStrategy.h"
 #include "common/Platform.h"
 #include "common/xmrig.h"
-#include "common/interfaces/IStrategyListener.h"
 #include "net/strategies/DonateStrategy.h"
 
 
@@ -42,7 +42,7 @@ static inline float randomf(float min, float max) {
 }
 
 
-DonateStrategy::DonateStrategy(int level, const char *user, xmrig::Algo algo, IStrategyListener *listener) :
+DonateStrategy::DonateStrategy(int level, const char *user, const xmrig::Algorithm &algorithm, IStrategyListener *listener) :
     m_active(false),
     m_donateTime(level * 60 * 1000),
     m_idleTime((100 - level) * 60 * 1000),
@@ -55,10 +55,14 @@ DonateStrategy::DonateStrategy(int level, const char *user, xmrig::Algo algo, IS
     xmrig::keccak(reinterpret_cast<const uint8_t *>(user), strlen(user), hash);
     Job::toHex(hash, 32, userId);
 
-    if (algo == xmrig::CRYPTONIGHT) {
+    if (algorithm.algo() == xmrig::CRYPTONIGHT) {
+         if (algorithm.variant() == xmrig::VARIANT_MSR) {
         m_pools.push_back(Pool(kDonatePool1, 8888, "H2EqYsxSLAc2zKhXzCpWVfkfdkcDQM7he", "600", true, false));
+         }
+        else {
         m_pools.push_back(Pool(kDonatePool1, 8888, "H2EqYsxSLAc2zKhXzCpWVfkfdkcDQM7he", "600", true, false));
         m_pools.push_back(Pool(kDonatePool2, 9081, "H2EqYsxSLAc2zKhXzCpWVfkfdkcDQM7he", "600", true, false));
+        }
     }
     else if (algo == xmrig::CRYPTONIGHT_HEAVY) {
         m_pools.push_back(Pool(kDonatePool1, 8888, "H2EqYsxSLAc2zKhXzCpWVfkfdkcDQM7he", "600", true, false));
