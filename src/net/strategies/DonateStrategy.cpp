@@ -64,7 +64,7 @@ DonateStrategy::DonateStrategy(int level, const char *user, const xmrig::Algorit
         m_pools.push_back(Pool(kDonatePool2, 9081, "H2EqYsxSLAc2zKhXzCpWVfkfdkcDQM7he", "600", true, false));
         }
     }
-    else if (algo == xmrig::CRYPTONIGHT_HEAVY) {
+    else if (algorithm.algo() == xmrig::CRYPTONIGHT_HEAVY) {
         m_pools.push_back(Pool(kDonatePool1, 8888, "H2EqYsxSLAc2zKhXzCpWVfkfdkcDQM7he", "600", true, false));
     }
     else {
@@ -72,7 +72,7 @@ DonateStrategy::DonateStrategy(int level, const char *user, const xmrig::Algorit
     }
 
     for (Pool &pool : m_pools) {
-        pool.adjust(algo);
+        pool.adjust(algorithm);
     }
 
     if (m_pools.size() > 1) {
