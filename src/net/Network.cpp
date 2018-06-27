@@ -61,7 +61,7 @@ Network::Network(xmrig::Controller *controller) :
         m_strategy = new SinglePoolStrategy(pools.front(), controller->config()->retryPause(), controller->config()->retries(), this);
     }
 
-     if (m_options->donateLevel() > 0) {
+     if (controller->config()->donateLevel() > 0) {
         m_donate = new DonateStrategy(controller->config()->donateLevel(), controller->config()->pools().front().user(), controller->config()->algorithm(), this);
      }
 
